@@ -1,69 +1,54 @@
 package tui
 
 import (
-	"log"
-
-	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
+	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/tview"
+	"github.con/vworri/side-car/database"
 )
 
-// StartTui initializes the tui and sets everything up
-func StartTui() {
-	if err := ui.Init(); err != nil {
-		log.Fatalf("failed to initialize termui: %v", err)
+const header_color = tcell.ColorYellow
+
+type App struct {
+	*tview.Application
+	navBar   *NavBar
+	grid     *tview.Grid
+	pages    *tview.Pages
+	taskPage *TaskView
+	db       *database.Database
+}
+
+func CreateApplicaion() App {
+	app := App{
+		Application: tview.NewApplication(),
+		db:          database.NewDatabase(),
+		pages:       tview.NewPages(),
+		grid:        tview.NewGrid(),
+		navBar:      NewNavBar(),
 	}
-	defer ui.Close()
+	app.GetTasks()
+	app.setGrid()
+	app.pages.SetChangedFunc(func() {
+		app.Draw()
+	})
+	app.SetRoot(app.grid, true)
+	return app
 
-	header := widgets.NewParagraph()
-	header.Text = "Press q to quit, Press h or l to switch tabs"
-	header.SetRect(0, 0, 50, 1)
-	header.Border = false
-	header.TextStyle.Bg = ui.ColorBlue
+}
 
-	p2 := widgets.NewParagraph()
-	p2.Text = "Press q to quit\nPress h or l to switch tabs\n"
-	p2.Title = "Keys"
-	p2.SetRect(5, 5, 40, 15)
-	p2.BorderStyle.Fg = ui.ColorYellow
-
-	bc := widgets.NewBarChart()
-	bc.Title = "Bar Chart"
-	bc.Data = []float64{3, 2, 5, 3, 9, 5, 3, 2, 5, 8, 3, 2, 4, 5, 3, 2, 5, 7, 5, 3, 2, 6, 7, 4, 6, 3, 6, 7, 8, 3, 6, 4, 5, 3, 2, 4, 6, 4, 8, 5, 9, 4, 3, 6, 5, 3, 6}
-	bc.SetRect(5, 5, 35, 10)
-	bc.Labels = []string{"S0", "S1", "S2", "S3", "S4", "S5"}
-
-	tabpane := widgets.NewTabPane("pierwszy", "drugi", "trzeci", "żółw", "four", "five")
-	tabpane.SetRect(0, 1, 50, 4)
-	tabpane.Border = true
-
-	renderTab := func() {
-		switch tabpane.ActiveTabIndex {
-		case 0:
-			ui.Render(p2)
-		case 1:
-			ui.Render(bc)
-		}
+func (app *App) setGrid() {
+	newPrimitive := func(text string) tview.Primitive {
+		return tview.NewTextView().
+			SetTextAlign(tview.AlignCenter).
+			SetText(text)
 	}
 
-	ui.Render(header, tabpane, p2)
+	app.grid.
+		SetRows(3, 0, 3).
+		// SetColumns(30, 0, 30).
+		SetBorders(true)
+	_, first_page := app.pages.GetFrontPage()
+	app.grid.AddItem(first_page, 1, 0, 1, 3, 0, 0, false).
+		AddItem(app.navBar.Edit, 0, 0, 1, 3, 0, 0, false).
+		AddItem(newPrimitive("Footer"), 2, 0, 1, 3, 0, 0, false)
 
-	uiEvents := ui.PollEvents()
-
-	for {
-		e := <-uiEvents
-		switch e.ID {
-		case "q", "<C-c>":
-			return
-		case "h":
-			tabpane.FocusLeft()
-			ui.Clear()
-			ui.Render(header, tabpane)
-			renderTab()
-		case "l":
-			tabpane.FocusRight()
-			ui.Clear()
-			ui.Render(header, tabpane)
-			renderTab()
-		}
-	}
 }

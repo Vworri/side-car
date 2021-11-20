@@ -1,0 +1,4 @@
+config/secrets.json
+*.exe
+*.db
+.vscode
