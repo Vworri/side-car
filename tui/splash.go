@@ -6,7 +6,6 @@ import (
 
 type grid struct {
 	*tview.Flex
-	currentOption int
 }
 
 func (app *App) HomePage() {

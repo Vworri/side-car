@@ -2,17 +2,15 @@ package database
 
 import (
 	"time"
-
-	"gorm.io/datatypes"
 )
 
 type Task struct {
-	Id          int            `gorm:"primary_key"`
-	Name        string         `gorm:"column:name"`
-	Description string         `gorm:"column:description"`
-	Complete    bool           `gorm:"column:complete"`
-	Due         datatypes.Date `gorm:"column:due"`
-	Category    string         `gorm:"column:category"`
+	Id          int       `gorm:"primary_key"`
+	Name        string    `gorm:"column:name"`
+	Description string    `gorm:"column:description"`
+	Complete    bool      `gorm:"column:complete"`
+	Due         time.Time `gorm:"column:due"`
+	Category    string    `gorm:"column:category"`
 }
 
 func (db *Database) CreateTask(task *Task) {
@@ -28,6 +26,10 @@ func (db *Database) DeleteTask(task *Task) {
 
 func (db *Database) UpdateTask(task *Task) {
 	db.Save(task)
+}
+
+func (db *Database) SyncTasks(tasks *[]Task) {
+	db.Find(tasks)
 }
 
 func (db *Database) GetTasks() *[]Task {
@@ -46,7 +48,7 @@ func (db *Database) AddNewTask() {
 		Name:        "New Task",
 		Description: "Everyone has something to do",
 		Complete:    false,
-		Due:         datatypes.Date(time.Now()),
+		Due:         time.Now(),
 		Category:    "fun",
 	}
 	db.CreateTask(&t)
